@@ -3,11 +3,16 @@ from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
 
 
-AUTH0_DOMAIN =  'coffee-cafe-shop.us.auth0.com' 
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'drinks'
+AUTH0_DOMAIN =  os.environ.get("auth0_domain")
+ALGORITHMS = [os.environ.get("algorithm")]
+API_AUDIENCE = os.environ.get("api_audience")
 
 ## AuthError Exception
 '''
@@ -132,7 +137,10 @@ def requires_auth(permission=''):
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
           except AuthError as e:
-               abort(e.status_code, description=e.error['description'])
+               raise AuthError({
+                'code': e.status_code,
+                'description': e.error['description']
+            }, e.status_code)
 
         return wrapper
     return requires_auth_decorator

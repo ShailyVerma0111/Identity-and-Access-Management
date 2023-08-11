@@ -17,8 +17,7 @@ db_drop_and_create_all()
 # ROUTES
 
 @app.route("/drinks")
-@requires_auth('get:drinks')
-def retrive_drinks(payload):
+def retrive_drinks():
     try:
         drinks =  Drink.query.order_by(Drink.id).all()
         list_of_drinks = []
@@ -87,7 +86,6 @@ def update_drink(payload, drink_id):
     body = request.get_json()
     new_title = body.get("title")
     recipe_data= body.get("recipe")
-    print(recipe_data)
 
     try:
         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
@@ -95,19 +93,14 @@ def update_drink(payload, drink_id):
             abort(404)
         if new_title is not None:
             if new_title != drink.title:
-               print("true")
                drink.title = new_title
 
         if recipe_data is not None:
             new_recipe=json.dumps(recipe_data)
-            print(new_recipe)
             if new_recipe != drink.recipe:
-               print("true")
                drink.recipe = new_recipe
         drink.update()
         updated_drink = Drink.query.get(drink_id)
-        print(updated_drink.title)
-        print(updated_drink.recipe)
         list_of_drink =[]
         list_of_drink.append(updated_drink.long())
         return jsonify(
@@ -156,26 +149,10 @@ def not_found(error):
     }), 404
 
 
-@app.errorhandler(400)
-def bad_request(error):
+@app.errorhandler(AuthError)
+def autherror_handler(ex):
     return jsonify({
         "success": False,
-        "error": 400,
-        "message": error.description
-    }), 400
-
-@app.errorhandler(401)
-def unauthorized(error):
-    return jsonify({
-        "success": False,
-        "error": 401,
-        "message": error.description
-    }), 401
-
-@app.errorhandler(403)
-def permission_not_found(error):
-    return jsonify({
-        "success": False,
-        "error": 403,
-        "message": error.description
-    }), 403
+        "error": ex.status_code,
+        "message": ex.error["description"]
+    }), ex.status_code
